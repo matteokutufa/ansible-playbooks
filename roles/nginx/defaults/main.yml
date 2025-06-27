@@ -1,0 +1,24 @@
+---
+# defaults file for nginx
+
+
+keyring_path: "/etc/apt/keyrings"
+
+nginx_install_from_os_repo: false
+nginx_repository_key_name: "nginx_signing.key"
+nginx_repository_key_url: "https://nginx.org/keys/{{ nginx_repository_key_name }}"
+nginx_repository_url: "http://nginx.org/packages/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} nginx"
+
+role_packages:
+  ubuntu:
+    - curl
+    - gnupg2
+    - ca-certificates
+    - lsb-release
+    - ubuntu-keyring
+  debian:
+    - curl
+    - gnupg2
+    - ca-certificates
+    - lsb-release
+    - debian-archive-keyring

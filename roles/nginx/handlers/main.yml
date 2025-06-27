@@ -1,0 +1,19 @@
+---
+# handlers file for nginx
+
+- name: Enable Nginx service
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+  tags:
+    - nginx
+    - services
+
+- name: Start Nginx service
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+  tags:
+    - nginx
+    - services

@@ -1,0 +1,102 @@
+---
+# tasks file for nginx
+
+- name: Gather facts
+  ansible.builtin.setup:
+  register: system_facts
+  tags:
+    - always
+
+- name: Install required packages for system {{ ansible_distribution | lower }}
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  when: system_facts is defined
+  loop: "{{ role_packages[ansible_distribution | lower] }}"
+  tags:
+    - requirements
+    - packages
+    - always
+
+- name: Check if keyring directory exists
+  ansible.builtin.stat:
+    path: "{{ keyring_path }}"
+  register: keyring_folder_exists
+  when: not nginx_install_from_os_repo | bool
+  tags:
+    - requirements
+    - directories
+    - check
+
+- name: Create keyring directory if not exists
+  ansible.builtin.file:
+    path: "{{ keyring_path }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  when: not keyring_folder_exists.stat.exists and not nginx_install_from_os_repo | bool
+  tags:
+    - requirements
+    - directories
+
+- name: Add Nginx official repository key from {{ nginx_repository_key_url }}
+  ansible.builtin.get_url:
+    url: "{{ nginx_repository_key_url }}"
+    dest: "{{ keyring_path }}/{{ nginx_repository_key_name }}"
+    mode: '0644'
+  when: not nginx_install_from_os_repo | bool
+  tags:
+    - nginx
+    - requirements
+    - packages
+
+- name: Set ownership for Nginx repository key
+  ansible.builtin.file:
+    path: "{{ keyring_path }}/{{ nginx_repository_key_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when: not nginx_install_from_os_repo | bool
+  tags:
+    - nginx
+    - requirements
+    - packages
+
+- name: Add Nginx official repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ keyring_path }}/{{ nginx_repository_key_name }}] {{ nginx_repository_url }}"
+    state: present
+    update_cache: true
+  when: ansible_distribution in ['Ubuntu', 'Debian'] and not nginx_install_from_os_repo | bool
+  tags:
+    - packages
+    - requirements
+    - packages
+
+- name: Install Nginx from official repository
+  ansible.builtin.package:
+    name: nginx
+    state: present
+  when: not nginx_install_from_os_repo | bool
+  notify:
+    - Enable Nginx service
+    - Start Nginx service
+  tags:
+    - packages
+    - requirements
+    - packages
+
+- name: Install Nginx from OS standard repository
+  ansible.builtin.package:
+    name: nginx
+    state: present
+  when: nginx_install_from_os_repo | bool
+  notify:
+    - Enable Nginx service
+    - Start Nginx service
+  tags:
+    - packages
+    - requirements
+    - packages
