@@ -1,0 +1,39 @@
+---
+# defaults file for ca
+
+ca_base_domain: "example.com"
+ca_name: "RootCA.{{ ca_base_domain }}"
+ca_country: "IT"
+ca_state: "Tuscany"
+ca_city: "Florence"
+ca_organization: "dev.local"
+ca_organizational_unit: "IT Department"
+ca_email: "admin@dev.local"
+
+# Paths and directory structure
+ca_base_dir: "/opt/ca"
+ca_certs_dir: "{{ ca_base_dir }}/certs"
+ca_private_dir: "{{ ca_base_dir }}/private"
+ca_newcerts_dir: "{{ ca_base_dir }}/newcerts"
+ca_crl_dir: "{{ ca_base_dir }}/crl"
+
+# Key and days configuration
+ca_key_size: 4096
+ca_validity_days: 3650
+cert_validity_days: 365
+
+# Configuration files
+ca_private_key: "{{ ca_private_dir }}/{{ ca_name }}-ca.key"
+ca_certificate: "{{ ca_certs_dir }}/{{ ca_name }}-ca.crt"
+ca_serial_file: "{{ ca_base_dir }}/serial"
+ca_index_file: "{{ ca_base_dir }}/index.txt"
+ca_config_file: "{{ ca_base_dir }}/openssl.cnf"
+
+# User and group for CA operations
+ca_user: "ca"
+ca_group: "ca"
+
+# Required packages for CA role
+role_packages:
+  - openssl
+  - ca-certificates

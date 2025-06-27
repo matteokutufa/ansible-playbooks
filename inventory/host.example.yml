@@ -1,0 +1,22 @@
+---
+all:
+  children:
+    host01:
+      hosts:
+        host01.example.com:
+          ansible_host: host01.example.com
+          ansible_port: 22
+    infra.dev.local:
+      host02:
+        host02.example.com:
+          ansible_host: host02.example.com
+          ansible_port: 2122
+
+  vars:
+    ansible_user: ansible
+    ansible_ssh_private_key_file: ~/.ssh/key_to_use.pem
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    ansible_connection: ssh
+    ansible_become: true
+    ansible_become_method: sudo
+

@@ -1,0 +1,9 @@
+---
+# handlers file for ca
+
+- name: update_ca_certificates
+  ansible.builtin.command:
+    cmd: update-ca-certificates
+  when: ansible_os_family == "Debian" or ansible_os_family == "Ubuntu"
+  tags:
+    - system_update
