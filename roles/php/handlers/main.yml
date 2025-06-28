@@ -1,0 +1,19 @@
+---
+# handlers file for php
+
+- name: Enable PHP-FPM service
+  ansible.builtin.systemd:
+    name: php{{ php.version }}-fpm
+    enabled: true
+    state: started
+  tags:
+    - php
+    - services
+
+- name: Start PHP-FPM service
+  ansible.builtin.systemd:
+    name: php{{ php.version }}-fpm
+    state: started
+  tags:
+    - php
+    - services

@@ -1,0 +1,8 @@
+---
+# defaults file for php
+
+keyring_path: "/etc/apt/keyrings"
+
+php:
+  install_from_os_repo: true
+  version: "8.3"
