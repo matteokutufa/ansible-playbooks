@@ -17,6 +17,7 @@ mariadb:
   install_from_os_repo: false
   repository_key_url: "{{ repository.key_url }}"
   repository_url: "{{ repository.mirror_base_url }}/{{ maria_db_version }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} main"
+  root_password: "MyVeryS3cretP4ssw0rd"
 
 role_required_packages:
   ubuntu:
