@@ -1,2 +1,39 @@
 ---
 # defaults file for mariadb
+
+
+maria_db_version: "11.8"
+
+keyring:
+  path: "/etc/apt/keyrings"
+  src_file_name: "mariadb_release_signing_key.pgp"
+  signing_file_name: "mariadb_signing.key"
+
+repository:
+  key_url: "https://mariadb.org/{{ keyring.src_file_name }}"
+  mirror_base_url: "http://mariadb.mirrors.ovh.net/MariaDB/repo"
+
+mariadb:
+  install_from_os_repo: false
+  repository_key_url: "{{ repository.key_url }}"
+  repository_url: "{{ repository.mirror_base_url }}/{{ maria_db_version }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} main"
+
+role_required_packages:
+  ubuntu:
+    - curl
+    - apt-transport-https
+    - python3-pymysql
+  debian:
+    - curl
+    - apt-transport-https
+    - python3-pymysql
+
+role_packages:
+  ubuntu:
+    - mariadb-server
+    - mariadb-client
+    - mariadb-common
+  debian:
+    - mariadb-server
+    - mariadb-client
+    - mariadb-common

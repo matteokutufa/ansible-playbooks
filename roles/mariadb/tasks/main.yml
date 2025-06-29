@@ -1,2 +1,78 @@
 ---
 # tasks file for mariadb
+
+- name: Gather facts
+  ansible.builtin.setup:
+  register: system_facts
+  tags:
+    - always
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ role_required_packages[ansible_distribution | lower] }}"
+    state: present
+    update_cache: true
+  when: role_required_packages[ansible_distribution | lower] is defined
+  tags:
+    - requirements
+    - packages
+    - always
+
+- name: Check if keyring directory exists
+  ansible.builtin.stat:
+    path: "{{ keyring.path }}"
+  register: keyring_folder_exists
+  when: not mariadb.install_from_os_repo | bool
+  tags:
+    - requirements
+    - directories
+    - check
+
+- name: Create keyring directory if not exists
+  ansible.builtin.file:
+    path: "{{ keyring.path }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  when: not keyring_folder_exists.stat.exists and not mariadb.install_from_os_repo | bool
+  tags:
+    - requirements
+    - directories
+
+- name: Add MariaDB official repository key from {{ mariadb.repository_key_url }}
+  ansible.builtin.get_url:
+    url: "{{ mariadb.repository_key_url }}"
+    dest: "{{ keyring.path }}/{{ keyring.signing_file_name }}"
+    mode: '0644'
+    owner: root
+    group: root
+  when: not mariadb.install_from_os_repo | bool
+  tags:
+    - mariadb
+    - requirements
+    - packages
+
+- name: Add MariaDB repository to sources list
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ keyring.path }}/{{ keyring.signing_file_name }}] {{ mariadb.repository_url }}"
+    state: present
+    update_cache: true
+  when: not mariadb.install_from_os_repo | bool
+  tags:
+    - mariadb
+    - requirements
+    - repositories
+
+- name: Install MariaDB packages
+  ansible.builtin.package:
+    name: "{{ role_packages[ansible_distribution | lower] }}"
+    state: present
+    update_cache: true
+  when: role_packages[ansible_distribution | lower] is defined and not mariadb.install_from_os_repo | bool
+  notify:
+    - Enable MariaDB service
+    - Start MariaDB service
+  tags:
+    - mariadb
+    - packages
