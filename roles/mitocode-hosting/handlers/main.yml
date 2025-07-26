@@ -1,0 +1,32 @@
+---
+# handlers file for mitocode-hosting
+
+- name: Restart nginx service
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+    enabled: true
+
+- name: Stop nginx service
+  ansible.builtin.systemd:
+    name: nginx
+    state: stopped
+    enabled: true
+
+- name: Restart php-fpm service
+  ansible.builtin.systemd:
+    name: php{{ php_major_minor }}-fpm
+    state: restarted
+    enabled: true
+
+- name: Stop php-fpm service
+  ansible.builtin.systemd:
+    name: php{{ php_major_minor }}-fpm
+    state: stopped
+    enabled: true
+
+- name: Restart mariadb service
+  ansible.builtin.systemd:
+    name: mariadb
+    state: restarted
+    enabled: true

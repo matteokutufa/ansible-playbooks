@@ -17,3 +17,12 @@
   tags:
     - php
     - services
+
+- name: Stop and disable Apache service
+  ansible.builtin.systemd:
+    name: httpd
+    enabled: false
+    state: stopped
+  tags:
+    - php
+    - services

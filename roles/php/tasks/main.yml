@@ -53,6 +53,7 @@
   notify:
     - Enable PHP-FPM service
     - Start PHP-FPM service
+    - Stop and disable Apache service
   tags:
     - php
     - os_repository
