@@ -1,0 +1,123 @@
+---
+# tasks file for virtualhost
+
+- name: "Recupera versione PHP"
+  ansible.builtin.shell: php -r "echo PHP_VERSION;"
+  register: php_version_output
+  changed_when: false
+
+- name: "Registra variabili PHP"
+  ansible.builtin.set_fact:
+    php_version: "{{ php_version_output.stdout }}"
+    php_major_minor: "{{ php_version_output.stdout | regex_replace('^([0-9]+\\.[0-9]+).*', '\\1') }}"
+    php_major: "{{ php_version_output.stdout.split('.')[0] }}"
+    php_minor: "{{ php_version_output.stdout.split('.')[1] }}"
+
+- name: Create virtual host group
+  ansible.builtin.group:
+    name: "{{ domain_group }}"
+
+- name: Create a random string for the virtual host user password
+  ansible.builtin.set_fact:
+    random_password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=16') }}"
+
+- name: Create virtual host user
+  ansible.builtin.user:
+    name: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+    shell: /bin/bash
+    create_home: true
+    home: "{{ vhost_base.home }}/{{ domain }}"
+    password: "{{ random_password | password_hash('sha512') }}"
+
+- name: Create virtual host directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+    mode: '0755'
+  loop:
+    - "{{ vhost_folders.httpdocs }}"
+    - "{{ vhost_folders.tmp }}"
+    - "{{ vhost_folders.run }}"
+    - "{{ vhost_folders.backup }}"
+    - "{{ vhost_folders.sessions }}"
+
+- name: Create virtual host logs folder
+  ansible.builtin.file:
+    path: "{{ vhost_folders.logs }}"
+    state: directory
+    owner: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+    mode: '0775'
+
+- name: Link logs folder into virtual host user home folder
+  ansible.builtin.file:
+    src: "{{ vhost_folders.logs }}"
+    dest: "{{ vhost_base.home }}/{{ domain }}/logs"
+    state: link
+    owner: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+
+- name: Create SSH directory for virtual host
+  ansible.builtin.file:
+    path: "{{ vhost_folders.ssh }}"
+    state: directory
+    owner: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+    mode: '0700'
+
+- name: Copy SSH public key for virtual host
+  ansible.builtin.copy:
+    src: "{{ ssh_public_key_file }}"
+    dest: "{{ vhost_folders.ssh }}/authorized_keys"
+    owner: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+    mode: '0600'
+
+- name: Create cache folders for virtual host
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ domain_user }}"
+    group: www-data
+    mode: '0775'
+  loop:
+    - "{{ vhost_folders.cache }}"
+    - "{{ vhost_folders.cache }}/main"
+    - "{{ vhost_folders.cache }}/api"
+    - "{{ vhost_folders.cache }}/social"
+    - "{{ vhost_folders.cache }}/static"
+
+- name: Deploy PHP-FPM configuration for the virtual host
+  ansible.builtin.template:
+    src: vhost-php-fpm.conf.j2
+    dest: "{{ vhost_base.php_config }}/{{ domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart PHP-FPM service
+
+- name: Deploy Nginx configuration for the virtual host
+  ansible.builtin.template:
+    src: vhost-nginx.conf.j2
+    dest: "{{ vhost_base.nginx_config }}/{{ domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Nginx service
+
+- name: Write main info into a .info.txt file into home folder
+  ansible.builtin.copy:
+    dest: "{{ vhost_base.home }}/{{ domain }}/.info.txt"
+    content: |
+      Domain........: {{ domain }}
+      User..........: {{ domain_user }}
+      Group.........: {{ domain_group }}
+      Password......: {{ random_password }}
+      Home folder...: {{ vhost_base.home }}/{{ domain }}
+      Logs folder...: {{ vhost_folders.logs }}/{{ domain }} (linked to {{ vhost_base.home }}/{{ domain }}/logs)
+    owner: "{{ domain_user }}"
+    group: "{{ domain_group }}"
+    mode: '0644'

@@ -1,0 +1,9 @@
+---
+# vars file for virtualhost
+
+domain: "ilvolta.dev.local"
+
+domain_user: "{{ domain | replace('.', '') }}"
+domain_group: "{{ domain_user }}"
+
+ssh_public_key_file: default.key.pub

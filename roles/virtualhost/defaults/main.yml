@@ -1,0 +1,23 @@
+---
+# defaults file for virtualhost
+
+# Global settings for virtual host
+hosting_group: "hosting"
+
+vhost_base_path: "/srv/hosting"
+
+vhost_base:
+    home: "{{ vhost_base_path }}/sites"
+    logs: "{{ vhost_base_path }}/logs"
+    nginx_config: "{{ vhost_base_path }}/config/nginx"
+    php_config: "{{ vhost_base_path }}/config/php"
+
+vhost_folders:
+    httpdocs: "{{ vhost_base.home }}/{{ domain }}/httpdocs"
+    logs: "{{ vhost_base.logs }}/{{ domain }}"
+    tmp: "{{ vhost_base.home }}/{{ domain }}/tmp"
+    run: "{{ vhost_base.home }}/{{ domain }}/run"
+    backup: "{{ vhost_base.home }}/{{ domain }}/backup"
+    ssh: "{{ vhost_base.home }}/{{ domain }}/.ssh"
+    sessions: "{{ vhost_base.home }}/{{ domain }}/sessions"
+    cache: "{{ vhost_base.home }}/{{ domain }}/cache"

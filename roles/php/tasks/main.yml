@@ -10,15 +10,31 @@
 - name: Get PHP version from OS repository
   ansible.builtin.shell:
     cmd: |
-      set -o pipefail #
-      false | apt-cache show php*fpm | egrep "Source: php[0-9\.]{3,6}" | head -n1 | awk '{print $2}' | sed 's/php//g'
+      set -o pipefail && false | apt-cache show php8*fpm | egrep "Source: php[0-9\.]{3,6}" | head -n1 | awk '{print $2}' | sed 's/php//g'
   register: php_os_repo_version
   changed_when: false
   failed_when: false
+  executable: /bin/bash
   when: system_facts is defined and php.install_from_os_repo | bool
   tags:
     - php
     - php_version
+    - os_repository
+
+- name: Debug PHP version from OS repository
+  ansible.builtin.debug:
+    msg: "PHP version from OS repository: {{ php_os_repo_version.stdout }}\n\n\n{{ php_os_repo_version }}"
+  when: system_facts is defined and php.install_from_os_repo | bool
+  tags:
+    - php
+    - os_repository
+
+- name: Wait for 30 seconds
+  ansible.builtin.pause:
+    seconds: 30
+  when: system_facts is defined and php.install_from_os_repo | bool
+  tags:
+    - php
     - os_repository
 
 - name: Install PHP packages from OS repository - php version {{ php_os_repo_version.stdout }}
@@ -53,7 +69,6 @@
   notify:
     - Enable PHP-FPM service
     - Start PHP-FPM service
-    - Stop and disable Apache service
   tags:
     - php
     - os_repository

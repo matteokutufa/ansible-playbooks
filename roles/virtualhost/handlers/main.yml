@@ -1,0 +1,14 @@
+---
+# handlers file for virtualhost
+
+- name: Restart PHP-FPM service
+  ansible.builtin.systemd:
+    name: "php{{ php_major_minor }}-fpm"
+    state: restarted
+    enabled: true
+
+- name: Restart Nginx service
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+    enabled: true

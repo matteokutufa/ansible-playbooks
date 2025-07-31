@@ -1,0 +1,121 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ domain }} www.{{ domain }};
+    
+    # SSL Configuration
+    #ssl_certificate /var/www/example.com/config/ssl/fullchain.pem;
+    #ssl_certificate_key /var/www/example.com/config/ssl/private.key;
+    #ssl_trusted_certificate /var/www/example.com/config/ssl/chain.pem;
+    
+    root {{ vhost_folders.httpdocs }};
+    index index.php index.html;
+    
+    # Rate limiting
+    limit_req zone=wp_admin burst=10 nodelay;
+    limit_conn conn_limit_per_ip 20;
+
+    # === SECURITY BLOCKS ===
+    location ~* /(?:uploads|files)/.*\.php$ {
+        deny all;
+    }
+    
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    location ~* ^.+\.(bak|save|swo|swp|tmp|#.*#)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    location ~* wp-config\.php {
+        deny all;
+    }
+    
+    location ~* ^/(readme|license|changelog.*)\.(txt|html)$ {
+        deny all;
+    }
+    
+    # === STATIC FILES OPTIMIZATION ===
+    location ~* \.(jpg|jpeg|gif|png|webp|svg|css|js|ico|xml)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header Vary Accept-Encoding;
+        access_log off;
+        try_files $uri $uri/ @fallback;
+    }
+    
+    location ~* \.(eot|ttf|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header Access-Control-Allow-Origin "*";
+        access_log off;
+    }
+    
+    location ~* \.(pdf|doc|docx|zip|rar)$ {
+        expires 1M;
+        add_header Cache-Control "public";
+        access_log off;
+    }
+
+    # === MAIN PHP PROCESSING ===
+    location ~ \.php$ {
+        try_files $uri =404;
+        
+        include fastcgi_params;
+        fastcgi_pass unix:{{ vhost_folders.run }}/php{{ php_major_minor }}-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param QUERY_STRING $query_string;
+        fastcgi_intercept_errors on;
+
+        fastcgi_read_timeout 900;
+        fastcgi_buffers 64 8k;
+        fastcgi_buffer_size 64k;
+        fastcgi_busy_buffers_size 64k;
+        fastcgi_cache off;
+        
+        add_header X-Cache-Status $upstream_cache_status;
+        add_header X-Content-Type-Options nosniff;
+    }
+    
+    # === WORDPRESS PERMALINKS ===
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+    
+    location @fallback {
+        rewrite ^.*$ /index.php last;
+    }
+    
+    # === MONITORING ===
+    location = /nginx-status {
+        stub_status on;
+        allow 127.0.0.1;
+        deny all;
+        access_log off;
+    }
+    
+    location ~ ^/(fpm-status|fpm-ping)$ {
+        allow 127.0.0.1;
+        deny all;
+        access_log off;
+    }
+
+    # === ERROR PAGES ===
+    error_page 404 /404.html;
+    error_page 500 502 503 504 /50x.html;
+    
+    location = /50x.html {
+        root /var/www/html;
+        internal;
+    }
+    
+    # === LOGGING ===
+    access_log {{ vhost_folders.logs }}/access.log main buffer=32k flush=5m;
+    error_log {{ vhost_folders.logs }}/error.log warn;
+}

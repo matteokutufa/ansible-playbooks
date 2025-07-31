@@ -23,11 +23,10 @@
 
 - name: Uninstall Apache2 if installed
   ansible.builtin.package:
-    name: apache2
+    name: apache2*
     state: absent
     autoremove: true
     autoclean: true
-  when: ansible_facts.packages.apache2 is defined
 
 - name: Deploy optimized limits.conf configuration
   ansible.builtin.copy:
